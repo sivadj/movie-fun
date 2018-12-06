@@ -17,7 +17,12 @@
 package org.superbiz.moviefun;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.superbiz.moviefun.movies.Movie;
 import org.superbiz.moviefun.movies.MoviesBean;
 
@@ -39,11 +44,17 @@ public class ActionServlet extends HttpServlet {
 
     public static int PAGE_SIZE = 5;
 
+    @Autowired
+    private PlatformTransactionManager getMoviesFactoryBean;
+
+    private TransactionTemplate moviestransactionTemplate;
+
     @EJB
     private MoviesBean moviesBean;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
         process(request, response);
     }
 
@@ -54,6 +65,7 @@ public class ActionServlet extends HttpServlet {
 
     private void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("action");
+        moviestransactionTemplate = new TransactionTemplate(getMoviesFactoryBean);
 
         if ("Add".equals(action)) {
 
@@ -65,7 +77,13 @@ public class ActionServlet extends HttpServlet {
 
             Movie movie = new Movie(title, director, genre, rating, year);
 
-            moviesBean.addMovie(movie);
+            moviestransactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                protected void doInTransactionWithoutResult(TransactionStatus status) {
+                    moviesBean.addMovie(movie);
+                }
+            });
+
+
             response.sendRedirect("moviefun");
             return;
 
@@ -73,7 +91,12 @@ public class ActionServlet extends HttpServlet {
 
             String[] ids = request.getParameterValues("id");
             for (String id : ids) {
-                moviesBean.deleteMovieId(new Long(id));
+                moviestransactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                    protected void doInTransactionWithoutResult(TransactionStatus status) {
+                        moviesBean.deleteMovieId(new Long(id));
+                    }
+                });
+
             }
 
             response.sendRedirect("moviefun");
