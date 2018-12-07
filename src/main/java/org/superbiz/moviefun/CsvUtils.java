@@ -16,7 +16,8 @@ public class CsvUtils {
     public static String readFile(String path) {
         try {
 
-            InputStream inputStream=ClassLoader.getSystemClassLoader().getResourceAsStream(path);
+            InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+//            InputStream inputStream=CsvUtils.class.getResourceAsStream(path);
             Scanner scanner = new Scanner(inputStream).useDelimiter("\\A");
 
             if (scanner.hasNext()) {
